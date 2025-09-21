@@ -34,16 +34,51 @@ class NaverCollector:
         print(f"📝 API 키 확인: {self.client_id[:4]}...")
         
         try:
-            result = search_news(query, display)
-            print(f"📊 search_news 결과 타입: {type(result)}")
-            print(f"📊 search_news 결과: {result}")
-            return result
+            # 직접 API 호출 구현
+            import urllib.parse as up
+            import requests
+            
+            q = up.quote(query)
+            url = f"https://openapi.naver.com/v1/search/news.json?query={q}&display={display}&start=1&sort=date"
+            
+            print(f"📡 직접 API 호출: {url}")
+            
+            headers = {
+                "X-Naver-Client-Id": self.client_id,
+                "X-Naver-Client-Secret": self.client_secret
+            }
+            
+            response = requests.get(url, headers=headers)
+            print(f"📡 응답 상태: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"❌ API 호출 실패: {response.text}")
+                return pd.DataFrame()
+            
+            js = response.json()
+            items = js.get("items", [])
+            print(f"📊 API 응답 아이템 수: {len(items)}")
+            
+            if not items:
+                print("⚠️ 검색 결과가 없습니다.")
+                return pd.DataFrame()
+            
+            # DataFrame 생성
+            df = pd.DataFrame([{
+                "title": it.get("title", "").replace("<b>", "").replace("</b>", ""),
+                "url": it.get("link", ""),
+                "published": it.get("pubDate", ""),
+                "desc": it.get("description", "").replace("<b>", "").replace("</b>", "")
+            } for it in items])
+            
+            print(f"📊 DataFrame 생성 완료: {df.shape}")
+            return df
+            
         except Exception as e:
             print(f"❌ search_news 에러: {e}")
-            print(f"❌ 에러 타입: {type(e)}")
             import traceback
             print(f"❌ 상세 에러: {traceback.format_exc()}")
-            raise
+            return pd.DataFrame()
     
     def search_blog(self, query: str, display: int = 20) -> pd.DataFrame:
         """네이버 블로그 검색"""
@@ -54,16 +89,52 @@ class NaverCollector:
         print(f"📝 API 키 확인: {self.client_id[:4]}...")
         
         try:
-            result = search_blog(query, display)
-            print(f"📊 search_blog 결과 타입: {type(result)}")
-            print(f"📊 search_blog 결과: {result}")
-            return result
+            # 직접 API 호출 구현
+            import urllib.parse as up
+            import requests
+            
+            q = up.quote(query)
+            url = f"https://openapi.naver.com/v1/search/blog.json?query={q}&display={display}&start=1&sort=date"
+            
+            print(f"📡 직접 API 호출: {url}")
+            
+            headers = {
+                "X-Naver-Client-Id": self.client_id,
+                "X-Naver-Client-Secret": self.client_secret
+            }
+            
+            response = requests.get(url, headers=headers)
+            print(f"📡 응답 상태: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"❌ API 호출 실패: {response.text}")
+                return pd.DataFrame()
+            
+            js = response.json()
+            items = js.get("items", [])
+            print(f"📊 API 응답 아이템 수: {len(items)}")
+            
+            if not items:
+                print("⚠️ 검색 결과가 없습니다.")
+                return pd.DataFrame()
+            
+            # DataFrame 생성
+            df = pd.DataFrame([{
+                "title": it.get("title", "").replace("<b>", "").replace("</b>", ""),
+                "url": it.get("link", ""),
+                "published": it.get("postdate", ""),
+                "desc": it.get("description", "").replace("<b>", "").replace("</b>", ""),
+                "bloggername": it.get("bloggername", "")
+            } for it in items])
+            
+            print(f"📊 DataFrame 생성 완료: {df.shape}")
+            return df
+            
         except Exception as e:
             print(f"❌ search_blog 에러: {e}")
-            print(f"❌ 에러 타입: {type(e)}")
             import traceback
             print(f"❌ 상세 에러: {traceback.format_exc()}")
-            raise
+            return pd.DataFrame()
 
 # 환경 변수에서 API 키 로드
 NAVER_ID = os.getenv("NAVER_CLIENT_ID")
