@@ -8,6 +8,31 @@ import datetime as dt
 import requests
 from typing import List, Dict, Any
 
+class NaverCollector:
+    """Naver 데이터 수집 클래스"""
+    
+    def __init__(self, client_id: str, client_secret: str):
+        self.client_id = client_id
+        self.client_secret = client_secret
+    
+    def _headers(self, json=False):
+        """API 호출용 헤더 생성"""
+        h = {
+            "X-Naver-Client-Id": self.client_id,
+            "X-Naver-Client-Secret": self.client_secret
+        }
+        if json:
+            h["Content-Type"] = "application/json"
+        return h
+    
+    def search_news(self, query: str, display: int = 20) -> pd.DataFrame:
+        """네이버 뉴스 검색"""
+        return search_news(query, display)
+    
+    def search_blog(self, query: str, display: int = 20) -> pd.DataFrame:
+        """네이버 블로그 검색"""
+        return search_blog(query, display)
+
 # 환경 변수에서 API 키 로드
 NAVER_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_SECRET = os.getenv("NAVER_CLIENT_SECRET")
