@@ -31,15 +31,25 @@ class NaverCollector:
         print(f"📝 쿼리: {query}")
         print(f"📝 쿼리 타입: {type(query)}")
         print(f"📝 display: {display}")
-        print(f"📝 API 키 확인: {self.client_id[:4]}...")
+        print(f"📝 API 키 확인: {self.client_id[:4] if self.client_id else 'None'}...")
+        print(f"📝 API 시크릿 확인: {self.client_secret[:4] if self.client_secret else 'None'}...")
+        
+        if not self.client_id or not self.client_secret:
+            print("❌ API 키가 설정되지 않았습니다!")
+            return pd.DataFrame()
         
         try:
             # 직접 API 호출 구현
             import urllib.parse as up
             import requests
             
-            q = up.quote(query)
+            # 키워드를 더 정확하게 인코딩
+            q = up.quote(query, safe='')
             url = f"https://openapi.naver.com/v1/search/news.json?query={q}&display={display}&start=1&sort=date"
+            
+            print(f"📝 원본 쿼리: {query}")
+            print(f"📝 인코딩된 쿼리: {q}")
+            print(f"📝 전체 URL: {url}")
             
             print(f"📡 직접 API 호출: {url}")
             
@@ -86,15 +96,25 @@ class NaverCollector:
         print(f"📝 쿼리: {query}")
         print(f"📝 쿼리 타입: {type(query)}")
         print(f"📝 display: {display}")
-        print(f"📝 API 키 확인: {self.client_id[:4]}...")
+        print(f"📝 API 키 확인: {self.client_id[:4] if self.client_id else 'None'}...")
+        print(f"📝 API 시크릿 확인: {self.client_secret[:4] if self.client_secret else 'None'}...")
+        
+        if not self.client_id or not self.client_secret:
+            print("❌ API 키가 설정되지 않았습니다!")
+            return pd.DataFrame()
         
         try:
             # 직접 API 호출 구현
             import urllib.parse as up
             import requests
             
-            q = up.quote(query)
+            # 키워드를 더 정확하게 인코딩
+            q = up.quote(query, safe='')
             url = f"https://openapi.naver.com/v1/search/blog.json?query={q}&display={display}&start=1&sort=date"
+            
+            print(f"📝 원본 쿼리: {query}")
+            print(f"📝 인코딩된 쿼리: {q}")
+            print(f"📝 전체 URL: {url}")
             
             print(f"📡 직접 API 호출: {url}")
             
