@@ -61,30 +61,68 @@ class TrendAnalyzer:
         # 네이버 뉴스 수집
         if use_naver_news:
             try:
+                st.info("🔍 네이버 뉴스 수집 시작...")
+                st.write(f"📝 입력 키워드: {keywords}")
+                st.write(f"📝 키워드 타입: {type(keywords)}")
+                
                 # 키워드를 문자열로 변환
                 query = ' '.join(keywords) if isinstance(keywords, list) else str(keywords)
+                st.write(f"📝 변환된 쿼리: {query}")
+                st.write(f"📝 쿼리 타입: {type(query)}")
+                
+                st.info("🌐 네이버 API 호출 중...")
                 news_data = self.naver.search_news(query, display=100)
-                if not news_data.empty:
-                    data['news_data']['naver_news'] = news_data.to_dict('records')
-                    st.success(f"✅ 네이버 뉴스 수집 완료: {len(news_data)}개")
+                st.write(f"📊 반환된 데이터 타입: {type(news_data)}")
+                st.write(f"📊 반환된 데이터: {news_data}")
+                
+                if hasattr(news_data, 'empty'):
+                    st.write(f"📊 데이터가 비어있는지 확인: {news_data.empty}")
+                    if not news_data.empty:
+                        data['news_data']['naver_news'] = news_data.to_dict('records')
+                        st.success(f"✅ 네이버 뉴스 수집 완료: {len(news_data)}개")
+                    else:
+                        st.warning("⚠️ 네이버 뉴스 데이터가 비어있습니다.")
                 else:
-                    st.warning("⚠️ 네이버 뉴스 데이터가 없습니다.")
+                    st.error(f"❌ 반환된 데이터가 DataFrame이 아닙니다: {type(news_data)}")
+                    
             except Exception as e:
                 st.error(f"❌ 네이버 뉴스 수집 실패: {str(e)}")
+                st.write(f"🔍 에러 타입: {type(e)}")
+                import traceback
+                st.write(f"🔍 상세 에러: {traceback.format_exc()}")
         
         # 네이버 블로그 수집
         if use_naver_blog:
             try:
+                st.info("🔍 네이버 블로그 수집 시작...")
+                st.write(f"📝 입력 키워드: {keywords}")
+                st.write(f"📝 키워드 타입: {type(keywords)}")
+                
                 # 키워드를 문자열로 변환
                 query = ' '.join(keywords) if isinstance(keywords, list) else str(keywords)
+                st.write(f"📝 변환된 쿼리: {query}")
+                st.write(f"📝 쿼리 타입: {type(query)}")
+                
+                st.info("🌐 네이버 API 호출 중...")
                 blog_data = self.naver.search_blog(query, display=100)
-                if not blog_data.empty:
-                    data['news_data']['naver_blog'] = blog_data.to_dict('records')
-                    st.success(f"✅ 네이버 블로그 수집 완료: {len(blog_data)}개")
+                st.write(f"📊 반환된 데이터 타입: {type(blog_data)}")
+                st.write(f"📊 반환된 데이터: {blog_data}")
+                
+                if hasattr(blog_data, 'empty'):
+                    st.write(f"📊 데이터가 비어있는지 확인: {blog_data.empty}")
+                    if not blog_data.empty:
+                        data['news_data']['naver_blog'] = blog_data.to_dict('records')
+                        st.success(f"✅ 네이버 블로그 수집 완료: {len(blog_data)}개")
+                    else:
+                        st.warning("⚠️ 네이버 블로그 데이터가 비어있습니다.")
                 else:
-                    st.warning("⚠️ 네이버 블로그 데이터가 없습니다.")
+                    st.error(f"❌ 반환된 데이터가 DataFrame이 아닙니다: {type(blog_data)}")
+                    
             except Exception as e:
                 st.error(f"❌ 네이버 블로그 수집 실패: {str(e)}")
+                st.write(f"🔍 에러 타입: {type(e)}")
+                import traceback
+                st.write(f"🔍 상세 에러: {traceback.format_exc()}")
         
         return data
     

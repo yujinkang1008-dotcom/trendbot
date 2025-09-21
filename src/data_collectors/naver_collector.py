@@ -27,11 +27,43 @@ class NaverCollector:
     
     def search_news(self, query: str, display: int = 20) -> pd.DataFrame:
         """네이버 뉴스 검색"""
-        return search_news(query, display)
+        print(f"🔍 NaverCollector.search_news 호출됨")
+        print(f"📝 쿼리: {query}")
+        print(f"📝 쿼리 타입: {type(query)}")
+        print(f"📝 display: {display}")
+        print(f"📝 API 키 확인: {self.client_id[:4]}...")
+        
+        try:
+            result = search_news(query, display)
+            print(f"📊 search_news 결과 타입: {type(result)}")
+            print(f"📊 search_news 결과: {result}")
+            return result
+        except Exception as e:
+            print(f"❌ search_news 에러: {e}")
+            print(f"❌ 에러 타입: {type(e)}")
+            import traceback
+            print(f"❌ 상세 에러: {traceback.format_exc()}")
+            raise
     
     def search_blog(self, query: str, display: int = 20) -> pd.DataFrame:
         """네이버 블로그 검색"""
-        return search_blog(query, display)
+        print(f"🔍 NaverCollector.search_blog 호출됨")
+        print(f"📝 쿼리: {query}")
+        print(f"📝 쿼리 타입: {type(query)}")
+        print(f"📝 display: {display}")
+        print(f"📝 API 키 확인: {self.client_id[:4]}...")
+        
+        try:
+            result = search_blog(query, display)
+            print(f"📊 search_blog 결과 타입: {type(result)}")
+            print(f"📊 search_blog 결과: {result}")
+            return result
+        except Exception as e:
+            print(f"❌ search_blog 에러: {e}")
+            print(f"❌ 에러 타입: {type(e)}")
+            import traceback
+            print(f"❌ 상세 에러: {traceback.format_exc()}")
+            raise
 
 # 환경 변수에서 API 키 로드
 NAVER_ID = os.getenv("NAVER_CLIENT_ID")
@@ -70,19 +102,29 @@ def search_news(query: str, display: int = 20) -> pd.DataFrame:
         pd.DataFrame: 뉴스 데이터
     """
     print(f"🔍 Naver 뉴스 검색 시작: '{query}', {display}개 결과")
+    print(f"📝 입력 파라미터 - query: {query}, display: {display}")
+    print(f"📝 query 타입: {type(query)}")
+    print(f"📝 API 키 확인: {NAVER_ID[:4] if NAVER_ID else 'None'}...")
     
     try:
         q = up.quote(query)
         url = f"https://openapi.naver.com/v1/search/news.json?query={q}&display={display}&start=1&sort=date"
         
         print(f"📡 API URL: {url}")
+        print(f"📡 헤더: {_headers()}")
         
         response = requests.get(url, headers=_headers())
-        response.raise_for_status()
+        print(f"📡 응답 상태 코드: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"❌ API 호출 실패: {response.status_code}")
+            print(f"❌ 응답 내용: {response.text}")
+            response.raise_for_status()
         
         js = response.json()
-        items = js.get("items", [])
+        print(f"📊 JSON 응답: {js}")
         
+        items = js.get("items", [])
         print(f"📊 API 응답: {len(items)}개 아이템")
         
         if not items and STRICT_FETCH:
@@ -93,6 +135,8 @@ def search_news(query: str, display: int = 20) -> pd.DataFrame:
         for i, it in enumerate(items):
             title = it.get("title", "")
             desc = it.get("description", "")
+            
+            print(f"📝 아이템 {i}: title='{title}', desc='{desc[:50]}...'")
             
             # HTML 태그 제거 확인
             clean_title = title.replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&")
@@ -133,19 +177,36 @@ def search_blog(query: str, display: int = 20) -> pd.DataFrame:
     Returns:
         pd.DataFrame: 블로그 데이터
     """
+    print(f"🔍 Naver 블로그 검색 시작: '{query}', {display}개 결과")
+    print(f"📝 입력 파라미터 - query: {query}, display: {display}")
+    print(f"📝 query 타입: {type(query)}")
+    print(f"📝 API 키 확인: {NAVER_ID[:4] if NAVER_ID else 'None'}...")
+    
     try:
         q = up.quote(query)
         url = f"https://openapi.naver.com/v1/search/blog.json?query={q}&display={display}&start=1&sort=date"
         
+        print(f"📡 API URL: {url}")
+        print(f"📡 헤더: {_headers()}")
+        
         response = requests.get(url, headers=_headers())
-        response.raise_for_status()
+        print(f"📡 응답 상태 코드: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"❌ API 호출 실패: {response.status_code}")
+            print(f"❌ 응답 내용: {response.text}")
+            response.raise_for_status()
         
         js = response.json()
+        print(f"📊 JSON 응답: {js}")
+        
         items = js.get("items", [])
+        print(f"📊 API 응답: {len(items)}개 아이템")
         
         if not items and STRICT_FETCH:
             raise ValueError(f"Naver 블로그 검색 실패: {query}")
         
+        print(f"📊 DataFrame 생성 시작...")
         df = pd.DataFrame([{
             "title": it.get("title", ""),
             "url": it.get("link", ""),
@@ -154,10 +215,20 @@ def search_blog(query: str, display: int = 20) -> pd.DataFrame:
             "bloggername": it.get("bloggername", "")
         } for it in items])
         
+        print(f"📊 DataFrame 생성 완료: {df.shape}")
+        print(f"📊 DataFrame 컬럼: {df.columns.tolist()}")
+        print(f"📊 DataFrame 샘플: {df.head()}")
+        
         _assert(df, ["title", "url", "published"], "naver_blog")
+        print(f"✅ 검증 통과")
         return df
         
     except Exception as e:
+        print(f"❌ search_blog 에러: {e}")
+        print(f"❌ 에러 타입: {type(e)}")
+        import traceback
+        print(f"❌ 상세 에러: {traceback.format_exc()}")
+        
         if STRICT_FETCH:
             raise
         print(f"Naver 블로그 검색 오류 ({query}): {e}")
