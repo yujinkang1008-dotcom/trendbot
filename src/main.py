@@ -61,7 +61,9 @@ class TrendAnalyzer:
         # 네이버 뉴스 수집
         if use_naver_news:
             try:
-                news_data = self.naver.search_news(keywords, display=100)
+                # 키워드를 문자열로 변환
+                query = ' '.join(keywords) if isinstance(keywords, list) else str(keywords)
+                news_data = self.naver.search_news(query, display=100)
                 if not news_data.empty:
                     data['news_data']['naver_news'] = news_data.to_dict('records')
                     st.success(f"✅ 네이버 뉴스 수집 완료: {len(news_data)}개")
@@ -73,7 +75,9 @@ class TrendAnalyzer:
         # 네이버 블로그 수집
         if use_naver_blog:
             try:
-                blog_data = self.naver.search_blog(keywords, display=100)
+                # 키워드를 문자열로 변환
+                query = ' '.join(keywords) if isinstance(keywords, list) else str(keywords)
+                blog_data = self.naver.search_blog(query, display=100)
                 if not blog_data.empty:
                     data['news_data']['naver_blog'] = blog_data.to_dict('records')
                     st.success(f"✅ 네이버 블로그 수집 완료: {len(blog_data)}개")
