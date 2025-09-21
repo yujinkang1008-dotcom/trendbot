@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendbot - 트렌드 분석</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .description {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .feature h3 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+        .feature p {
+            color: #666;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .status {
+            background: #e8f5e8;
+            color: #2d5a2d;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #c3e6c3;
+        }
+        .note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📊</div>
+        <h1>Trendbot</h1>
+        <p class="subtitle">트렌드 분석 서비스</p>
+        
+        <div class="status">
+            <strong>✅ Firebase 배포 완료!</strong><br>
+            트렌드 분석 서비스가 성공적으로 배포되었습니다.
+        </div>
+        
+        <div class="description">
+            <strong>한국어 키워드</strong>로 뉴스, 블로그 데이터를 수집하고 
+            <strong>KOMORAN 형태소 분석</strong>으로 정확한 분석을 제공합니다.
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>📰 뉴스 분석</h3>
+                <p>네이버 뉴스 데이터 수집 및 분석</p>
+            </div>
+            <div class="feature">
+                <h3>📝 블로그 분석</h3>
+                <p>네이버 블로그 데이터 수집 및 분석</p>
+            </div>
+            <div class="feature">
+                <h3>🔤 형태소 분석</h3>
+                <p>KOMORAN을 활용한 정확한 키워드 추출</p>
+            </div>
+            <div class="feature">
+                <h3>📈 시각화</h3>
+                <p>트렌드 차트 및 워드클라우드 생성</p>
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>💡 참고사항:</strong><br>
+            이 페이지는 Firebase Hosting에 배포된 정적 페이지입니다.<br>
+            실제 Streamlit 앱은 로컬에서 실행됩니다.
+        </div>
+    </div>
+</body>
+</html>
