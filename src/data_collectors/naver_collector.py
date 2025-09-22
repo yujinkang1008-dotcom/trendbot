@@ -26,7 +26,7 @@ class NaverCollector:
         return h
     
     def search_news(self, query: str, display: int = 20) -> pd.DataFrame:
-        """네이버 뉴스 검색"""
+        """네이버 뉴스 검색 (개선된 버전)"""
         print(f"🔍 NaverCollector.search_news 호출됨")
         print(f"📝 쿼리: {query}")
         print(f"📝 쿼리 타입: {type(query)}")
@@ -39,49 +39,79 @@ class NaverCollector:
             return pd.DataFrame()
         
         try:
-            # 직접 API 호출 구현
-            import urllib.parse as up
-            import requests
+            # 키워드 전처리 및 확장
+            processed_queries = self._process_query(query)
+            print(f"📝 처리된 쿼리들: {processed_queries}")
             
-            # 키워드를 더 정확하게 인코딩
-            q = up.quote(query, safe='')
-            url = f"https://openapi.naver.com/v1/search/news.json?query={q}&display={display}&start=1&sort=date"
+            all_results = []
             
-            print(f"📝 원본 쿼리: {query}")
-            print(f"📝 인코딩된 쿼리: {q}")
-            print(f"📝 전체 URL: {url}")
+            # 각 쿼리로 검색 수행
+            for i, processed_query in enumerate(processed_queries):
+                try:
+                    print(f"📡 검색 쿼리 {i+1}/{len(processed_queries)}: {processed_query}")
+                    
+                    # 키워드를 더 정확하게 인코딩
+                    q = up.quote(processed_query, safe='')
+                    url = f"https://openapi.naver.com/v1/search/news.json?query={q}&display={min(display, 100)}&start=1&sort=date"
+                    
+                    print(f"📝 인코딩된 쿼리: {q}")
+                    print(f"📝 전체 URL: {url}")
+                    
+                    headers = {
+                        "X-Naver-Client-Id": self.client_id,
+                        "X-Naver-Client-Secret": self.client_secret
+                    }
+                    
+                    response = requests.get(url, headers=headers)
+                    print(f"📡 응답 상태: {response.status_code}")
+                    
+                    if response.status_code != 200:
+                        print(f"❌ API 호출 실패: {response.text}")
+                        continue
+                    
+                    js = response.json()
+                    items = js.get("items", [])
+                    print(f"📊 쿼리 '{processed_query}' 응답 아이템 수: {len(items)}")
+                    
+                    if items:
+                        # 결과에 쿼리 정보 추가
+                        for item in items:
+                            item['search_query'] = processed_query
+                            item['relevance_score'] = self._calculate_relevance(item, query)
+                        
+                        all_results.extend(items)
+                        print(f"✅ 쿼리 '{processed_query}': {len(items)}개 결과 추가")
+                    
+                except Exception as e:
+                    print(f"❌ 쿼리 '{processed_query}' 검색 실패: {e}")
+                    continue
             
-            print(f"📡 직접 API 호출: {url}")
-            
-            headers = {
-                "X-Naver-Client-Id": self.client_id,
-                "X-Naver-Client-Secret": self.client_secret
-            }
-            
-            response = requests.get(url, headers=headers)
-            print(f"📡 응답 상태: {response.status_code}")
-            
-            if response.status_code != 200:
-                print(f"❌ API 호출 실패: {response.text}")
-                return pd.DataFrame()
-            
-            js = response.json()
-            items = js.get("items", [])
-            print(f"📊 API 응답 아이템 수: {len(items)}")
-            
-            if not items:
-                print("⚠️ 검색 결과가 없습니다.")
+            if not all_results:
+                print("⚠️ 모든 쿼리에서 검색 결과가 없습니다.")
                 return pd.DataFrame()
             
             # DataFrame 생성
             df = pd.DataFrame([{
-                "title": it.get("title", "").replace("<b>", "").replace("</b>", ""),
+                "title": it.get("title", "").replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
                 "url": it.get("link", ""),
                 "published": it.get("pubDate", ""),
-                "desc": it.get("description", "").replace("<b>", "").replace("</b>", "")
-            } for it in items])
+                "desc": it.get("description", "").replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
+                "search_query": it.get("search_query", query),
+                "relevance_score": it.get("relevance_score", 0)
+            } for it in all_results])
             
-            print(f"📊 DataFrame 생성 완료: {df.shape}")
+            # 중복 제거 (URL 기준)
+            df = df.drop_duplicates(subset=['url'], keep='first')
+            
+            # 관련성 점수 순으로 정렬
+            df = df.sort_values('relevance_score', ascending=False)
+            
+            # 결과 개수 제한
+            df = df.head(display)
+            
+            print(f"📊 최종 DataFrame 생성 완료: {df.shape}")
+            print(f"📊 관련성 점수 분포: {df['relevance_score'].describe()}")
+            
             return df
             
         except Exception as e:
@@ -90,8 +120,90 @@ class NaverCollector:
             print(f"❌ 상세 에러: {traceback.format_exc()}")
             return pd.DataFrame()
     
+    def _process_query(self, query: str) -> List[str]:
+        """쿼리 전처리 및 확장"""
+        queries = [query]  # 기본 쿼리
+        
+        # 키워드별 특별 처리
+        if "ai" in query.lower() or "인공지능" in query:
+            # AI 관련 쿼리 확장
+            if "생성형" in query or "generative" in query.lower():
+                queries.extend([
+                    f'"{query}"',  # 정확한 구문 검색
+                    f"{query} 기술",
+                    f"{query} 도구",
+                    f"{query} 서비스"
+                ])
+            else:
+                queries.extend([
+                    f'"{query}"',
+                    f"{query} 기술",
+                    f"{query} 발전",
+                    f"{query} 동향"
+                ])
+        else:
+            # 일반 키워드 처리
+            queries.extend([
+                f'"{query}"',  # 정확한 구문 검색
+                f"{query} 관련",
+                f"{query} 동향"
+            ])
+        
+        # 중복 제거 및 순서 유지
+        seen = set()
+        unique_queries = []
+        for q in queries:
+            if q.lower() not in seen:
+                seen.add(q.lower())
+                unique_queries.append(q)
+        
+        return unique_queries[:5]  # 최대 5개 쿼리로 제한
+    
+    def _calculate_relevance(self, item: Dict, original_query: str) -> int:
+        """관련성 점수 계산"""
+        try:
+            title = str(item.get("title", "")).lower()
+            desc = str(item.get("description", "")).lower()
+            query = original_query.lower()
+            
+            score = 0
+            
+            # 정확한 매칭 (가장 높은 점수)
+            if query in title:
+                score += 20
+            if query in desc:
+                score += 10
+            
+            # 구문 매칭 (따옴표로 감싸진 경우)
+            if f'"{query}"' in title or f'"{query}"' in desc:
+                score += 15
+            
+            # 단어별 매칭
+            query_words = query.split()
+            for word in query_words:
+                if len(word) > 2:  # 2글자 이상인 단어만
+                    if word in title:
+                        score += 5
+                    if word in desc:
+                        score += 2
+            
+            # 키워드별 추가 점수
+            if "ai" in query.lower() or "인공지능" in query:
+                ai_terms = ["ai", "인공지능", "머신러닝", "딥러닝", "chatgpt", "gpt"]
+                for term in ai_terms:
+                    if term in title:
+                        score += 3
+                    if term in desc:
+                        score += 1
+            
+            return score
+            
+        except Exception as e:
+            print(f"❌ 관련성 점수 계산 실패: {e}")
+            return 0
+    
     def search_blog(self, query: str, display: int = 20) -> pd.DataFrame:
-        """네이버 블로그 검색"""
+        """네이버 블로그 검색 (개선된 버전)"""
         print(f"🔍 NaverCollector.search_blog 호출됨")
         print(f"📝 쿼리: {query}")
         print(f"📝 쿼리 타입: {type(query)}")
@@ -104,50 +216,80 @@ class NaverCollector:
             return pd.DataFrame()
         
         try:
-            # 직접 API 호출 구현
-            import urllib.parse as up
-            import requests
+            # 키워드 전처리 및 확장
+            processed_queries = self._process_query(query)
+            print(f"📝 처리된 쿼리들: {processed_queries}")
             
-            # 키워드를 더 정확하게 인코딩
-            q = up.quote(query, safe='')
-            url = f"https://openapi.naver.com/v1/search/blog.json?query={q}&display={display}&start=1&sort=date"
+            all_results = []
             
-            print(f"📝 원본 쿼리: {query}")
-            print(f"📝 인코딩된 쿼리: {q}")
-            print(f"📝 전체 URL: {url}")
+            # 각 쿼리로 검색 수행
+            for i, processed_query in enumerate(processed_queries):
+                try:
+                    print(f"📡 검색 쿼리 {i+1}/{len(processed_queries)}: {processed_query}")
+                    
+                    # 키워드를 더 정확하게 인코딩
+                    q = up.quote(processed_query, safe='')
+                    url = f"https://openapi.naver.com/v1/search/blog.json?query={q}&display={min(display, 100)}&start=1&sort=date"
+                    
+                    print(f"📝 인코딩된 쿼리: {q}")
+                    print(f"📝 전체 URL: {url}")
+                    
+                    headers = {
+                        "X-Naver-Client-Id": self.client_id,
+                        "X-Naver-Client-Secret": self.client_secret
+                    }
+                    
+                    response = requests.get(url, headers=headers)
+                    print(f"📡 응답 상태: {response.status_code}")
+                    
+                    if response.status_code != 200:
+                        print(f"❌ API 호출 실패: {response.text}")
+                        continue
+                    
+                    js = response.json()
+                    items = js.get("items", [])
+                    print(f"📊 쿼리 '{processed_query}' 응답 아이템 수: {len(items)}")
+                    
+                    if items:
+                        # 결과에 쿼리 정보 추가
+                        for item in items:
+                            item['search_query'] = processed_query
+                            item['relevance_score'] = self._calculate_relevance(item, query)
+                        
+                        all_results.extend(items)
+                        print(f"✅ 쿼리 '{processed_query}': {len(items)}개 결과 추가")
+                    
+                except Exception as e:
+                    print(f"❌ 쿼리 '{processed_query}' 검색 실패: {e}")
+                    continue
             
-            print(f"📡 직접 API 호출: {url}")
-            
-            headers = {
-                "X-Naver-Client-Id": self.client_id,
-                "X-Naver-Client-Secret": self.client_secret
-            }
-            
-            response = requests.get(url, headers=headers)
-            print(f"📡 응답 상태: {response.status_code}")
-            
-            if response.status_code != 200:
-                print(f"❌ API 호출 실패: {response.text}")
-                return pd.DataFrame()
-            
-            js = response.json()
-            items = js.get("items", [])
-            print(f"📊 API 응답 아이템 수: {len(items)}")
-            
-            if not items:
-                print("⚠️ 검색 결과가 없습니다.")
+            if not all_results:
+                print("⚠️ 모든 쿼리에서 검색 결과가 없습니다.")
                 return pd.DataFrame()
             
             # DataFrame 생성
             df = pd.DataFrame([{
-                "title": it.get("title", "").replace("<b>", "").replace("</b>", ""),
+                "title": it.get("title", "").replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
                 "url": it.get("link", ""),
                 "published": it.get("postdate", ""),
-                "desc": it.get("description", "").replace("<b>", "").replace("</b>", ""),
-                "bloggername": it.get("bloggername", "")
-            } for it in items])
+                "desc": it.get("description", "").replace("<b>", "").replace("</b>", "").replace("&quot;", '"').replace("&amp;", "&"),
+                "bloggername": it.get("bloggername", ""),
+                "search_query": it.get("search_query", query),
+                "relevance_score": it.get("relevance_score", 0)
+            } for it in all_results])
             
-            print(f"📊 DataFrame 생성 완료: {df.shape}")
+            # 중복 제거 (URL 기준)
+            df = df.drop_duplicates(subset=['url'], keep='first')
+            
+            # 관련성 점수 순으로 정렬
+            df = df.sort_values('relevance_score', ascending=False)
+            
+            # 결과 개수 제한
+            df = df.head(display)
+            
+            print(f"📊 최종 DataFrame 생성 완료: {df.shape}")
+            print(f"📊 관련성 점수 분포: {df['relevance_score'].describe()}")
+            
             return df
             
         except Exception as e:
